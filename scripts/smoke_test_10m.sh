@@ -71,8 +71,24 @@ SUMMARY="$RUN_DIR/summary.txt"
 log "Running unit tests"
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests -v >"$RUN_DIR/tests.log" 2>&1
 
+BASE_CMD_COUNT=$(python3 - <<'PY'
+import sqlite3
+from pathlib import Path
+db = Path("bot.sqlite3")
+if not db.exists():
+    print(0)
+    raise SystemExit(0)
+conn = sqlite3.connect(str(db))
+cur = conn.cursor()
+cur.execute("select count(*) from agent_commands")
+print(cur.fetchone()[0])
+conn.close()
+PY
+)
+
 log "Starting bot loop (interval 30s)"
-openclaw-bot run-loop --interval-sec 30 >"$LOOP_LOG" 2>&1 &
+# Disable telegram polling in run-loop to avoid racing getUpdates offsets.
+openclaw-bot run-loop --interval-sec 30 --disable-telegram >"$LOOP_LOG" 2>&1 &
 LOOP_PID=$!
 
 log "Starting telegram agent"
@@ -137,7 +153,7 @@ conn.close()
 PY
 
 ERROR_LINES=$(rg -n "Traceback|ERROR|Exception" "$LOOP_LOG" "$AGENT_LOG" -S || true)
-CMD_COUNT=$(python3 - <<'PY'
+END_CMD_COUNT=$(python3 - <<'PY'
 import sqlite3
 try:
     conn = sqlite3.connect("bot.sqlite3")
@@ -149,6 +165,11 @@ except Exception:
     print(-1)
 PY
 )
+if [[ "$END_CMD_COUNT" -ge 0 ]]; then
+  CMD_COUNT=$((END_CMD_COUNT - BASE_CMD_COUNT))
+else
+  CMD_COUNT=-1
+fi
 
 PASS=true
 if [[ "$CMD_COUNT" -lt 6 ]]; then
@@ -162,7 +183,9 @@ fi
   echo "run_dir=$RUN_DIR"
   echo "loop_log=$LOOP_LOG"
   echo "agent_log=$AGENT_LOG"
-  echo "agent_commands_count=$CMD_COUNT"
+  echo "agent_commands_delta=$CMD_COUNT"
+  echo "agent_commands_total_before=$BASE_CMD_COUNT"
+  echo "agent_commands_total_after=$END_CMD_COUNT"
   echo "errors_found=$([[ -n "$ERROR_LINES" ]] && echo yes || echo no)"
   if [[ "$PASS" == true ]]; then
     echo "result=PASS"
