@@ -29,6 +29,12 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m unittest discover -s tests -
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 -m openclaw_bot.main run-once
 ```
 
+## Fresh WSL Reset + Setup
+Use this if you want to wipe old OpenClaw and start clean:
+```bash
+bash scripts/reset_openclaw_and_setup_bot.sh
+```
+
 ## Commands
 - `openclaw-bot run-once`: one decision cycle.
 - `openclaw-bot run-loop --interval-sec 300`: repeating cycles (+ Telegram command polling when configured).
