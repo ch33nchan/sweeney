@@ -35,6 +35,13 @@ Use this if you want to wipe old OpenClaw and start clean:
 bash scripts/reset_openclaw_and_setup_bot.sh
 ```
 
+## Single-Terminal 10-Min Smoke Test
+Use this when you cannot open multiple WSL tabs:
+```bash
+bash scripts/smoke_test_10m.sh
+```
+It runs unit tests, starts both bot processes in background, sends Telegram commands, waits 10 minutes, and prints a pass/fail summary.
+
 ## Commands
 - `openclaw-bot run-once`: one decision cycle.
 - `openclaw-bot run-loop --interval-sec 300`: repeating cycles (+ Telegram command polling when configured).
