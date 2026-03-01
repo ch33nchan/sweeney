@@ -40,7 +40,7 @@ Use this when you cannot open multiple WSL tabs:
 ```bash
 bash scripts/smoke_test_10m.sh
 ```
-It runs unit tests, starts both bot processes in background, sends Telegram commands, waits 10 minutes, and prints a pass/fail summary.
+It runs unit tests, starts both bot processes in background, asks you to send Telegram commands from your phone/client, waits 10 minutes, and prints a pass/fail summary.
 
 ## Commands
 - `openclaw-bot run-once`: one decision cycle.

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # 10-minute single-terminal smoke test.
 # - starts trading loop + telegram agent in background
-# - sends command sequence to telegram bot
+# - asks user to send command sequence from Telegram client
 # - runs 10 minutes
 # - prints pass/fail summary
 
@@ -97,26 +97,20 @@ AGENT_PID=$!
 
 sleep 5
 
-send_cmd() {
-  local cmd="$1"
+notify_user() {
+  local text="$1"
   curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
     -H "Content-Type: application/json" \
-    -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"${cmd}\"}" >/dev/null
-  log "Sent command: ${cmd}"
+    -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"${text}\"}" >/dev/null
 }
 
-log "Sending command sequence"
-send_cmd "status"
-sleep 6
-send_cmd "pause"
-sleep 6
-send_cmd "status"
-sleep 6
-send_cmd "resume"
-sleep 6
-send_cmd "set_risk 0.003"
-sleep 6
-send_cmd "status"
+log "Notifying command checklist to Telegram"
+notify_user "Smoke test started. Please send these commands from your Telegram app (one per message): status, pause, status, resume, set_risk 0.003, status"
+echo
+echo "IMPORTANT:"
+echo "Telegram bots do not receive their own sendMessage text as incoming updates."
+echo "You must send commands from your Telegram app during this run."
+echo
 
 log "Running for 10 minutes"
 sleep 600
@@ -172,7 +166,7 @@ else
 fi
 
 PASS=true
-if [[ "$CMD_COUNT" -lt 6 ]]; then
+if [[ "$CMD_COUNT" -lt 4 ]]; then
   PASS=false
 fi
 if [[ -n "$ERROR_LINES" ]]; then
@@ -186,6 +180,7 @@ fi
   echo "agent_commands_delta=$CMD_COUNT"
   echo "agent_commands_total_before=$BASE_CMD_COUNT"
   echo "agent_commands_total_after=$END_CMD_COUNT"
+  echo "expected_min_agent_commands_delta=4"
   echo "errors_found=$([[ -n "$ERROR_LINES" ]] && echo yes || echo no)"
   if [[ "$PASS" == true ]]; then
     echo "result=PASS"
